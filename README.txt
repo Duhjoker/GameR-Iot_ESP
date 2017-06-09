@@ -1,64 +1,150 @@
-Warning: This is a modified version of the official PJRC ILI9341_t3 library (https://github.com/PaulStoffregen/ILI9341_t3).
+ This is the read me for the GameRIot diy game and Iot gadget. Created by Jeremy Wood Duhjoker Based on 
+the original Gamebuino gaming library created by Aurellian Rodot.The libraries contained with in 
+this file are a collaboration of the best minds online including KurtE, PaulS, Sumotoy and the nice 
+people at adafruit. It was designed to accomadate most modern Mcu's but runs best using a teensy 3.2 
+to 3.6 and esp8266 with work in progress to include esp32.The library is complete but some functions 
+need help. For example it needs a bootloader gui, titlescreen needs to be fixed as well as the popup 
+features. There are batterymeter functions as well that can work with a monitor.As of writing this i 
+have just recently added the spi tft function to draw full color bitmaps straight from An SD card. 
+Optimizations incude DMA and a screen buffer plus the fastest function versions available. 
 
-Maybe some day, some of the additional functionality in this library will be merged into the official library or into another
-derivative which supports DMA access to the screen that can be found at: https://github.com/FrankBoesing/ILI9341_t3DMA
+  Use of this library is at your own risk. Please refer to manufactures data sheets and pin 
+outs for your particular hardwares. All credentials are listed in the Grafx file. I do not take 
+credit for others work.
+
+ For most mcu's and teensy a 3.7v lipo is the best option. Use the 3.3v 
+out put pins to power your hardwares including the tft. DO Not power the tft using 5v as the screen will 
+overheat and cause damage to your hardware. Do not allow the teensy to be powered by the lipo chargers 5v output.
+The buttons configuration will need to be updated to match your particular pin out and can be found in the 
+settings.c file. 
+
+Hardware::::
+
+works best with 
+
+Teensy 3.2 to 3.6 and esp8266, seperate provisional library collaboration by myself and kurtE for the esp32 included
+
+TFT = any TFT that shares its drivers wuth the ILI9341 SPI tft shield on pcb. Does not work with 8-bit parrelel
+
+3.7v lipo 1500mah you dont have to use a 1500mah 1000mah wil do but the battery/ies need to be as compact and or flat as possible to accomadte other hardwares.
+
+SD card reader if teensy 3.2 or earlier
+
+micro usb lipo charger TP4056
+
+12 x mini tactile switches 6x6x5mm 
+
+on/off switch
+
+Dupont wire jumpers
+
+breadboard
+
+included are stl files for cases that use 2.4 and 2.8 tfts 
+
+hobby screws with extra wide head. screws work best
+
+Tools::
+
+small saw blade, nibs or bandsaw to cut breadboard
+
+soldering iron
+
+solder and flux
+
+shrink tube 
+
+lighter to heat shrink tube
 
 
-In particular - This uses my SPIN library (https://github.com/KurtE/SPIN), which allows me to use different SPI busses, by
-passing in which SPIN object to use.  It also allows multiple instances of this class, with a possible mix of SPI busses.
 
-The constructor for the class now takes an optional pointer to a SPIN object, which defaults to SPIN which is for the SPI buss.  To use SPI1, pass in &SPIN1, and likewise for SPI2 buss pass in &SPIN2.  Note: there is also code in place that if you forget to update which SPIN object to use and the begin method finds that the passed in values for MISO/MOSI/SCK are not valid for the currently selected buss, it will see if those pins are valid on SPI1 or SPI2 and if so, will recover and set to use the appropriate SPIN object. 
 
-In addition, this code allows the ILI9341 code to work with only one hardware CS pin available, 
-which in this case must be used for the DC pin.  This is very useful to support SPI1 on the new T3.5 and T3.6 boards which only
-have one CS pin unless you use some form of adapter to use the SPI pins that are on the SDCARD. 
 
-On the T3.5 and T3.6 which have a lot more memory than previous Teensy processors, I also borrowed from the DMA version of the library and added code to be able to use a logical Frame Buffer.  To enable this I added a couple of API's 
 
-    uint8_t useFrameBuffer(boolean b) - if b non-zero it will allocate memory and start using
-    void	freeFrameBuffer(void) - Will free up the memory that was used.
-    void	updateScreen(void); - Will update the screen with all of your updates...
+If you would like to contribute please email me @ GameRIotAdvanvedGaming@yahoo.com
 
-In addition, this library now has some of the API's and functionality that has been requested in a pull request.  In particular it now supports, the ability to set a clipping rectangle as well as setting an origin that is used with the drawing primitives.   These new API's include:
+Case Enclosure instructions and packing::
 
-	void setOrigin(int16_t x = 0, int16_t y = 0); 
-	void getOrigin(int16_t* x, int16_t* y);
-	void setClipRect(int16_t x1, int16_t y1, int16_t w, int16_t h); 
-	void setClipRect();
+Start by printing your choice of case or use your choice printing shop. there are two sizes one is for the 2.8 
+tft and the other for a 2.4 tft's. Be sure to iclude the right button sets and back as they are different in size.
+no printer ive seen prints an affordable perfect print so you will need to do some sanding and painting.start with
+a good sanding using 220grit paper then spraying with color then repeating til the paint lays flat. then hit it 
+with some 400 and 600 and spray one last coat of color or let cure on your fridge over night and clearcoat twice.
 
-Discussion regarding this optimized version:
+ Next use a 2mm drill bit and drill motor to drill out holes in each screw turret to make the screws easier to screw 
+in other wise they can get stuck and break or strip. Then clip each screw to 3mm to 4mm length on the screw. 
 
-http://forum.pjrc.com/threads/26305-Highly-optimized-ILI9341-%28320x240-TFT-color-display%29-library
+Now we can carefully hot glue the far left or right of the case depending on your preference but.... looking from the
+inside of the case from the rear there will be an indented place just wide enough to fit the screen. if the tft connectors
+are on the left slide the screen all the way to the left. if on the right slide it right. Use only drops of glue to keep 
+from melting your case then add more later if not secure enough.
 
-This version of the library supports the Adafruit displays that use the ILI9341 displays, but in
-addition are setup to support the displays that are sold by PJRC, which include:
-	http://pjrc.com/store/display_ili9341.html
-	http://pjrc.com/store/display_ili9341_touch.html
+Next we need to build the button pad. Start by making measurements of the screw turrets and thier centers so you can mark 
+you bread board and cut. Next drill your mounting holes then make two crosses with two more buttons inbetween for start and 
+select. next solder the buttons where all share the same ground. Now drill a hole through the center of the crosses 
+and poke your jumper wires through the backside then wist each wire and poke it through any hole not soldered to 
+ground at the prongs of the tactile switches and flip and solder. This makes the wires secure so they dont break
+when you have to manipulate and tuck wires. do the same with the select and start buttons. Now install the actual 
+buttons and screm your new button pad in tight enough to not click the tactile switches.
 
-Note: this library like the the ILI9341_t3 library which it is derived from no longer  require any of the Adafruit libraries, such as their Adafruit_ILI9341 and Adafruit_GFX libraries APIS are based on.
+Next use some insulating tape or masking tape and cover all the circuits and smt diodes. Heat the tape using a lighter 
+carefully not burning the tape but heating it to heat the adhesive to seal it to the board.Now use the black plastic clip 
+attached to your jumpers and bent each pin 90 very carefully to the board. Next attach the battery 
+to the back of the tft with a lil hot glue. The flatter the battery the more space you will have to fit more hardware.
+I try to use a 5mm thick battery. at this poit you can wire the power switch the case.
 
-But as this code is based of of their work, their original information is included below:
+Its time to wire. First solder the pins to the MCU for this build we are using a teensy3x. You want to do this 
+with the long part on top and soldred from the back. Now again using the black plastic clip on your jumper wires
+and bend each pin carefully over 90*. Now look at the profile and the whole mcu is 5mm thick.
 
-------------------------------------------
+The next step is to remove the plastic clips from enough jumpers to populate the tft pins. Except for the led 
+pin which needs to be tied and soldred to the vcc pin wire. The tft only needs 3.3v to power both the led backlight
+and the VCC. This will also save space. Place a strip of shrinktube long enough to cover the jumpers metal clip 
+then solder each wire jumper head to each pin. after letting it cool pull the shrink yubes up to cover the bare metal
+clips and shrink them using a lighter.
 
-This is a library for the Adafruit ILI9341 display products
+Next take your TP4056 and solder two black wires to the negative output pad and solder two red wires to the positive
+pad. Now take four unsoldered bare pins and push the black plastic clip where its halfway between he pins. now use this attach 
+the jumpers to the battery and one goes from the positive output to your switch and then to the teensy's vcc. 
 
-This library works with the Adafruit 2.8" Touch Shield V2 (SPI)
-  ----> http://www.adafruit.com/products/1651
- 
-Check out the links above for our tutorials and wiring diagrams.
-These displays use SPI to communicate, 4 or 5 pins are required
-to interface (RST is optional).
+Now ground and power the tft from the ground and 3.3v out puts on the teensy. Test and watch overheating or any
+other problems. Now test the charger while the power is off. i have found that adding 5v to my teensy tends to drain power 
+and send out too much heat especially where the tft is involved. Theres also the weird way in which the teensy regulates
+power which can send more power through the outputs than whats called for needed. In my observations at least.
 
-Adafruit invests time and resources providing this open source code,
-please support Adafruit and open-source hardware by purchasing
-products from Adafruit!
+Glue you charger down in a place where you can get to it and connect your mcu. 
 
-Written by Limor Fried/Ladyada for Adafruit Industries.
-MIT license, all text above must be included in any redistribution
+Now place the library files included in a folder called Gamebuinosquared in your arduino libraries. if using up to esp8266
+use the main library. If using esp32 place the file marked esp into the arduino libraries folder instead. Make sure to 
+also include the spin library with the main library for the buffer and dma settings.
 
-To download. click the DOWNLOADS button in the top right corner, rename the uncompressed folder Adafruit_ILI9341. Check that the Adafruit_ILI9341 folder contains Adafruit_ILI9341.cpp and Adafruit_ILI9341.
+All you have to do now is study the function list in the file marked Grafx.h and start building games.
 
-Place the Adafruit_ILI9341 library folder your arduinosketchfolder/libraries/ folder. You may need to create the libraries subfolder if its your first library. Restart the IDE
 
-Also requires the Adafruit_GFX library for Arduino.
+
+
+
+Teensy tft wiring
+
+vcc-----3.7v
+gnd-----ground
+cs--------------------10
+reset---3.3
+dc--------------------9
+mosi------------------11
+sck-------------------13
+led------3.3v
+miso------------------12
+
+
+Esp32 tft wiring
+
+vcc-----3.7v
+gnd-----ground
+cs---------------------22
+reset---3.3v
+dc---------------------5
+mosi-------------------23
+sck--------------------18
+led-----3.3v
+miso-------------------19
