@@ -1904,7 +1904,11 @@ void Grafx_esp::writeRectNBPP(int16_t x, int16_t y, int16_t w, int16_t h, uint8_
 			uint8_t pixel_shift = row_shift_init;			// Setup mask
 
 			for (int i = 0; i < w; i++) {
-				*pfbPixel++ = FBmapColor(palette[((*pixels) >> pixel_shift) & pixel_bit_mask]);
+///				*pfbPixel++ = FBmapColor(palette[((*pixels) >> pixel_shift) & pixel_bit_mask]);
+				uint8_t palette_index = ((*pixels)>>pixel_shift) & pixel_bit_mask;
+                if (palette_index != TRANSPARENT_INDEX)
+                *pfbPixel = palette[palette_index];
+                *pfbPixel++;
 				if (!pixel_shift) {
 					pixel_shift = 8 - bits_per_pixel;	//setup next mask
 					pixels++;
@@ -1920,7 +1924,7 @@ void Grafx_esp::writeRectNBPP(int16_t x, int16_t y, int16_t w, int16_t h, uint8_
 
 	}
 #endif
-
+/*
 	beginSPITransaction();
 	setAddr(x, y, x + w - 1, y + h - 1);
 	writecommand_cont(Grafx_RAMWR);
@@ -1942,8 +1946,31 @@ void Grafx_esp::writeRectNBPP(int16_t x, int16_t y, int16_t w, int16_t h, uint8_
 	}
 	writecommand_last(Grafx_NOP);
 	endSPITransaction();
+}*/
+////////////////////////////////////////////////////////////////////
+///for transparent pixels
+	beginSPITransaction();
+	for (;h>0; h--) {
+		pixels = pixels_row_start;				// setup for this row
+		uint8_t pixel_shift = row_shift_init;			// Setup mask
+                int16_t x_out = x; 
+		for (int i = 0 ;i < w; i++) {
+			uint8_t palette_index = ((*pixels)>>pixel_shift) & pixel_bit_mask;
+			if (palette_index != TRANSPARENT_INDEX)
+				Pixel(x_out, y, palette[palette_index]);
+			if (!pixel_shift) {
+				pixel_shift = 8 - bits_per_pixel;	//setup next mask
+				pixels++;
+			} else {
+				pixel_shift -= bits_per_pixel;
+			}
+			x_out++;
+		}
+		pixels_row_start += count_of_bytes_per_row;
+		y++;
+	}
+	endSPITransaction();
 }
-
 /////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////
 //////////////-------------------------Frame Buffer------------------------//////////////
