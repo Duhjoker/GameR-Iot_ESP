@@ -1,16 +1,16 @@
- This is the read me for the GameRIot diy game and Iot gadget. Created by Jeremy Wood Duhjoker Based on 
-the original Gamebuino gaming library created by Aurellian Rodot.The libraries contained with in 
-this file are a collaboration of the best minds online including KurtE, PaulS, Sumotoy and the nice 
-people at adafruit. It was designed to accomadate most modern Mcu's but runs best using a teensy 3.2 
-to 3.6 and esp8266 with work in progress to include esp32.The library is complete but some functions 
-need help. For example it needs a bootloader gui, titlescreen needs to be fixed as well as the popup 
-features. There are batterymeter functions as well that can work with a monitor.As of writing this i 
-have just recently added the spi tft function to draw full color bitmaps straight from An SD card. 
-Optimizations incude DMA and a screen buffer plus the fastest function versions available. 
+ This is the read me for the GameRIot diy game and Iot gadget. Created by Jeremy Wood Duhjoker Based loosely on 
+the original Gamebuino gaming library created by Aurellian Rodot and the Arduboy library by MLXXp. 
+The libraries contained with in this file are a collaboration of the best minds online including KurtE, 
+PaulS, Sumotoy, with functionality Borroed from Gamebuino, Arduboy and the nice people at adafruit. It was designed 
+to accomadate most modern Mcu's but runs best using a teensy 3.2 to 3.6 and esp8266 with work in progress to include 
+esp32. The library is complete but some functions need help. For example it needs a bootloader gui, titlescreen needs 
+to be added as well as a popup feature. There are batterymeter functions as well that can work with a 
+monitor. As of writing this i have just recently added the spi tft function to draw full color bitmaps 
+straight from An SD card. Optimizations incude DMA and a screen buffer plus the fastest function versions available. 
 
   Use of this library is at your own risk. Please refer to manufactures data sheets and pin 
 outs for your particular hardwares. All credentials are listed in the Grafx file. I do not take 
-credit for others work.
+credit for others work. If you feel you have not been represented, kindly email me and i will update your credit.
 
  For most mcu's and teensy a 3.7v lipo is the best option. Use the 3.3v 
 out put pins to power your hardwares including the tft. DO Not power the tft using 5v as the screen will 
