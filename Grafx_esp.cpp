@@ -1097,8 +1097,8 @@ void Grafx_esp::drawBitmapTM(int8_t x, int8_t y, int8_t w, int8_t h, const uint8
 	int8_t i, j, byteWidth = (w + 7) / 8;
 	dw += dx;
 	dh += dy;
-	int8_t largest = 0;
-	int8_t largesty = 0;
+//	int8_t largest = 0;
+//	int8_t largesty = 0;
 	for (j = 0; j < h; j++) {
 		for (i = 0; i < w; i++) {
 			if (pgm_read_byte(bitmap + j * byteWidth + i / 8) & (B10000000 >> (i % 8))) {
@@ -1113,31 +1113,32 @@ void Grafx_esp::drawBitmapTM(int8_t x, int8_t y, int8_t w, int8_t h, const uint8
 	}
 }
 
-boolean Grafx_esp::getBitmapPixel(const uint8_t* bitmap, uint8_t x, uint8_t y){
+boolean Grafx_esp::getBitmapPixel(const uint8_t* bitmap, uint16_t x, uint16_t y){
 	return pgm_read_byte(bitmap + 2 + y * ((pgm_read_byte(bitmap) + 7) / 8) + (x >> 3)) & (B10000000 >> (x % 8));
 }
 
-void Grafx_esp::drawTilemap(int x, int y, const uint8_t *tilemap, const uint8_t **spritesheet, uint16_t color){
-	drawTilemap(x, y, tilemap, spritesheet, 0, 0, Grafx_TFTWIDTH, Grafx_TFTHEIGHT, color);
+void Grafx_esp::drawTilemap(int x, int y, const uint16_t *tilemap, const uint8_t **spritesheet, uint16_t * palette){
+	drawTilemap(x, y, tilemap, spritesheet, 0, 0, Grafx_TFTWIDTH, Grafx_TFTHEIGHT, palette);
 }
-void Grafx_esp::drawTilemap(int x, int y, const uint8_t *tilemap, const uint8_t **spritesheet, uint8_t dx, uint8_t dy, uint8_t dw, uint8_t dh, uint16_t color){
+void Grafx_esp::drawTilemap(int x, int y, const uint16_t *tilemap, const uint8_t **spritesheet, uint16_t dx, uint16_t dy, uint16_t dw, uint16_t dh, uint16_t * palette){
 	uint8_t tilemap_width = pgm_read_byte(tilemap);
 	uint8_t tilemap_height = pgm_read_byte(tilemap + 1);
 	uint8_t tile_width = pgm_read_byte(tilemap + 2);
 	uint8_t tile_height = pgm_read_byte(tilemap + 3);
 	tilemap += 4; // now the first tiyleis at tilemap
-	uint8_t ddw = dw + dx;
-	uint8_t ddh = dh + dy;
-	uint8_t maxDdx = (dw - x + tile_width - 1) / tile_width;
-	uint8_t maxDdy = (dh - y + tile_height - 1) / tile_height;
+
+	uint16_t ddw = dw + dx;
+	uint16_t ddh = dh + dy;
+	uint16_t maxDdx = (dw - x + tile_width - 1) / tile_width;
+	uint16_t maxDdy = (dh - y + tile_height - 1) / tile_height;
 	if (tilemap_width < maxDdx){
 		maxDdx = tilemap_width;
 	}
 	if (tilemap_height < maxDdy){
 		maxDdy = tilemap_height;
 	}
-	int8_t startDdx = (-x) / tile_width;
-	int8_t startDdy = (-y) / tile_height;
+	int16_t startDdx = (-x) / tile_width;
+	int16_t startDdy = (-y) / tile_height;
 	if (startDdx < 0){
 		startDdx = 0;
 	}
@@ -1146,14 +1147,13 @@ void Grafx_esp::drawTilemap(int x, int y, const uint8_t *tilemap, const uint8_t 
 	}
 	if (flagcollision)numcolision = 0;                                 //Line 735 - clear numcolision - ADD by Summoner123
 
-	for (uint8_t ddy = startDdy; ddy < maxDdy; ddy++){
-		for (uint8_t ddx = startDdx; ddx < maxDdx; ddx++){
-			int8_t drawX = ddx*tile_width + x + dx;
-			int8_t drawY = ddy*tile_height + y + dy;
-			uint8_t tile = pgm_read_byte(tilemap + ddy*tilemap_width + ddx);
+	for (uint16_t ddy = startDdy; ddy < maxDdy; ddy++){
+		for (uint16_t ddx = startDdx; ddx < maxDdx; ddx++){
+			int16_t drawX = ddx*tile_width + x + dx;
+			int16_t drawY = ddy*tile_height + y + dy;
+			uint16_t tile = pgm_read_byte(tilemap + ddy*tilemap_width + ddx);
 			if (drawX >= dx && drawY >= dy && drawX <= (ddw - tile_width) && drawY <= (ddh - tile_height)){
-				drawBitmap1(drawX, drawY, spritesheet[tile], tile_width, tile_height, color );
-
+				writeRectNBPP(drawX, drawY,tile_width, tile_height, 4, spritesheet[tile], palette );
 				if (flagcollision){
 					solid[numcolision].x = drawX;                     //Save X coordinate      - ADD by Summoner123
 					solid[numcolision].y = drawY;                     //Save Y coordinate      - ADD by Summoner123
@@ -1162,7 +1162,7 @@ void Grafx_esp::drawTilemap(int x, int y, const uint8_t *tilemap, const uint8_t 
 				}
 			}
 			else{ // we need to draw a partial bitmap
-				drawBitmapTM(drawX, drawY, tile_width, tile_height, spritesheet[tile], dx, dy, dw, dh, color);
+				writeRect4BPPtm(drawX, drawY, tile_width, tile_height, spritesheet[tile], dx, dy, dw, dh, palette);
 			}
 		}
 	}
@@ -1822,6 +1822,24 @@ void Grafx_esp::writeRect4BPP(int16_t x, int16_t y, int16_t w, int16_t h, const 
 	writeRectNBPP(x, y, w, h, 4, pixels, palette);
 }
 
+///////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+void Grafx_esp::writeRect4BPPtm(int16_t x, int16_t y, int16_t w, int16_t h, const uint8_t *pixels, uint16_t dx, uint16_t dy, uint16_t dw, uint16_t dh, const uint16_t * palette )
+{
+	dw += dx;
+	dh += dy;{
+//	int16_t largest = 0;
+//	int16_t largesty = 0;
+		int16_t drawX = x;
+				int16_t drawY = y;
+
+				if (drawX >= dx && drawX < dw && drawY >= dy && drawY < dh){
+	// Simply call through our helper
+	writeRectNBPP(x, y, w, h,  4, pixels, palette );
+        }
+    }
+}
 // writeRect2BPP - 	write 2 bit per pixel paletted bitmap
 //					bitmap data in array at pixels, 4 bits per pixel
 //					color palette data in array at palette
@@ -2084,7 +2102,6 @@ boolean Grafx_esp::updateAll() {
 
 
 //		buttons.update();
-//		battery.update();
 
 		return true;
 

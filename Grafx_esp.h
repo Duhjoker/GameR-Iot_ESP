@@ -58,7 +58,13 @@
 #define _Grafx_esp_H_
 #define  Grafx_USE_DMAMEM
 
-#define ENABLE_Grafx_FRAMEBUFFER
+// Allow us to enable or disable capabilities, particully Frame Buffer and Clipping for speed and size
+#ifndef DISABLE_GrafxT3_FRAMEBUFFER
+#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
+#define ENABLE_GrafxT3_FRAMEBUFFER
+#endif
+#endif
+
 
 // Allow way to override using SPI
 
@@ -66,9 +72,6 @@
 #include "Arduino.h"
 #include <SPI.h>
 #endif
-
-#include "Sound.h"
-#include "Buttons.h"
 
 #include "Fonts/fonts.h"
 
@@ -134,28 +137,33 @@
 */
 
 // Color definitions
-#define BLACK       0x0000      /*   0,   0,   0 */
-#define NAVY        0x000F      /*   0,   0, 128 */
-#define DARKGREEN   0x03E0      /*   0, 128,   0 */
-#define DARKCYAN    0x03EF      /*   0, 128, 128 */
-#define MAROON      0x7800      /* 128,   0,   0 */
-#define PURPLE      0x780F      /* 128,   0, 128 */
-#define OLIVE       0x7BE0      /* 128, 128,   0 */
-#define LIGHTGREY   0xC618      /* 192, 192, 192 */
-#define DARKGREY    0x7BEF      /* 128, 128, 128 */
-#define GREY        0x8410
-#define BLUE        0x001F      /*   0,   0, 255 */
-#define GREEN       0x07E0      /*   0, 255,   0 */
-#define CYAN        0x07FF      /*   0, 255, 255 */
-#define RED         0xF800      /* 255,   0,   0 */
-#define MAGENTA     0xF81F      /* 255,   0, 255 */
-#define LIGHTBROWN  0xF52C
-#define BROWN       0xA145
-#define YELLOW      0xFFE0      /* 255, 255,   0 */
-#define WHITE       0xFFFF      /* 255, 255, 255 */
-#define ORANGE      0xFD20      /* 255, 165,   0 */
-#define GREENYELLOW 0xAFE5      /* 173, 255,  47 */
-#define PINK        0xF81F
+
+#define TRANSPARENT_INDEX 0
+
+#define BLANK         0x00   
+#define BLACK         0x0000      /*   0,   0,   0 */
+#define WHITE         0xFFFF      /* 255, 255, 255 */
+#define NAVY          0x000F      /*   0,   0, 128 */
+#define BROWN         0xA145
+#define LIGHTBROWN    0XF7BB
+#define BEIGE         0xF52C
+#define DARKGREEN     0x03E0      /*   0, 128,   0 */
+#define DARKCYAN      0x03EF      /*   0, 128, 128 */
+#define MAROON        0x7800      /* 128,   0,   0 */
+#define PURPLE        0x780F      /* 128,   0, 128 */
+#define OLIVE         0x7BE0      /* 128, 128,   0 */
+#define GREY          0x8410
+#define LIGHTGREY     0xC618      /* 192, 192, 192 */
+#define DARKGREY      0x7BEF      /* 128, 128, 128 */
+#define BLUE          0x001F      /*   0,   0, 255 */
+#define GREEN         0x07E0      /*   0, 255,   0 */
+#define CYAN          0x07FF      /*   0, 255, 255 */
+#define RED           0xF800      /* 255,   0,   0 */
+#define MAGENTA       0xF81F      /* 255,   0, 255 */
+#define YELLOW        0xFFE0      /* 255, 255,   0 */
+#define ORANGE        0xFD20      /* 255, 165,   0 */
+#define GREENYELLOW   0xAFE5      /* 173, 255,  47 */
+#define PINK          0xFFD6D6    /* 255, 214, 214 */    
 
 #define CL(_r,_g,_b) ((((_r)&0xF8)<<8)|(((_g)&0xFC)<<3)|((_b)>>3))
 
@@ -181,6 +189,13 @@ typedef struct {
 	unsigned char cap_height;
 } Grafx_t3_font_t;
 
+struct Rect{
+	int16_t x;
+	int16_t y;
+	uint8_t width;
+	uint8_t height;
+};
+
 #define Grafx_DMA_INIT	0x01 	// We have init the Dma settings
 #define Grafx_DMA_CONT	0x02 	// continuous mode
 #define Grafx_DMA_ACTIVE  0x80    // Is currently active
@@ -199,9 +214,6 @@ inline void swap(int16_t &a, int16_t &b) { int16_t t = a; a = b; b = t; }
 class Grafx_esp : public Print
 {
   public:
-
-  	Buttons buttons;
-  	Sound sound;
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -266,19 +278,19 @@ class Grafx_esp : public Print
 	void        drawBitmap4(int16_t x, int16_t y, uint8_t *bitmap, int16_t w, int16_t h, uint16_t color, uint16_t bg);
 	
     void        drawBitmapTM(int8_t x, int8_t y, int8_t w, int8_t h, const uint8_t *bitmap, uint8_t dx, uint8_t dy, uint8_t dw, uint8_t dh, uint16_t color);
-	boolean     getBitmapPixel(const uint8_t* bitmap, uint8_t x, uint8_t y);
+	boolean     getBitmapPixel(const uint8_t* bitmap, uint16_t x, uint16_t y);
 
-	void        drawTilemap(int x, int y, const uint8_t *tilemap, const uint8_t **spritesheet, uint16_t color);
-	void        drawTilemap(int x, int y, const uint8_t *tilemap, const uint8_t **spritesheet, uint8_t dx, uint8_t dy, uint8_t dw, uint8_t dh, uint16_t color);
+	void        drawTilemap(int x, int y, const uint16_t *tilemap, const uint8_t **spritesheet, uint16_t * palette);
+	void        drawTilemap(int x, int y, const uint16_t *tilemap, const uint8_t **spritesheet, uint16_t dx, uint16_t dy, uint16_t dw, uint16_t dh, uint16_t * palette);
 
 	typedef struct {       //line 171 "Public Variables   - ADD by Summoner123
 		int x;                    //X coordinate                 - ADD by Summoner123
 		int y;                    //Y coordinate                 - ADD by Summoner123
 		const byte *spritecol;    //Sprite of object             - ADD by Summoner123
 	}object;
-	object solid[60];         // Matriz were saved a Sprite, X and Y cordinates of all tiles on the screen - ADD by Summoner123
+	object solid[300];         // Matriz were saved a Sprite, X and Y cordinates of all tiles on the screen - ADD by Summoner123
 
-	byte numcolision = 0;     //count of solid objects indacat how many tiles drawed on the screen - ADD by Summoner123
+	int numcolision = 3;     //count of solid objects indacat how many tiles drawed on the screen - ADD by Summoner123
 
 	bool flagcollision = true;
 
@@ -364,7 +376,14 @@ class Grafx_esp : public Print
 	//					color palette data in array at palette
 	//					width must be at least 2 pixels
 	void writeRect4BPP(int16_t x, int16_t y, int16_t w, int16_t h, const uint8_t *pixels, const uint16_t * palette );
-	
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+    void writeRect4BPPtm(int16_t x, int16_t y, int16_t w, int16_t h, const uint8_t *pixels, uint16_t dx, uint16_t dy, uint16_t dw, uint16_t dh, const uint16_t * palette );
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////
 	// writeRect2BPP - 	write 2 bit per pixel paletted bitmap
 	//					bitmap data in array at pixels, 4 bits per pixel
 	//					color palette data in array at palette
