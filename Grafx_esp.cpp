@@ -221,9 +221,36 @@ void Grafx_esp::pushColor(uint16_t color)
 	endSPITransaction();
 }
 
+//void Grafx_esp::fillScreen(uint16_t color)
+//{
+//	fillRect(0, 0, _width, _height, color);
+//}
+
 void Grafx_esp::fillScreen(uint16_t color)
 {
-	fillRect(0, 0, _width, _height, color);
+	#ifdef ENABLE_GrafxT3_FRAMEBUFFER
+	if (_use_fbtft && _standard) {
+		// Speed up lifted from Franks DMA code... _standard is if no offsets and rects..
+		uint32_t color32 = (color << 16) | color;
+
+		uint32_t *pfbPixel = (uint32_t *)_pfbtft;
+		uint32_t *pfbtft_end = (uint32_t *)((uint16_t *)&_pfbtft[(GrafxT3_TFTHEIGHT * GrafxT3_TFTWIDTH)]); // setup
+		while (pfbPixel < pfbtft_end) {
+			*pfbPixel++ = color32; *pfbPixel++ = color32; *pfbPixel++ = color32;*pfbPixel++ = color32;
+			*pfbPixel++ = color32; *pfbPixel++ = color32; *pfbPixel++ = color32;*pfbPixel++ = color32;
+			*pfbPixel++ = color32; *pfbPixel++ = color32; *pfbPixel++ = color32;*pfbPixel++ = color32;
+			*pfbPixel++ = color32; *pfbPixel++ = color32; *pfbPixel++ = color32;*pfbPixel++ = color32;
+			*pfbPixel++ = color32; *pfbPixel++ = color32; *pfbPixel++ = color32;*pfbPixel++ = color32;
+			*pfbPixel++ = color32; *pfbPixel++ = color32; *pfbPixel++ = color32;*pfbPixel++ = color32;
+			*pfbPixel++ = color32; *pfbPixel++ = color32; *pfbPixel++ = color32;*pfbPixel++ = color32;
+			*pfbPixel++ = color32; *pfbPixel++ = color32; *pfbPixel++ = color32;*pfbPixel++ = color32;
+		}
+
+	} else 
+	#endif
+	{
+		fillRect(0, 0, _width, _height, color);
+	}
 }
 
 void Grafx_esp::drawPixel(int16_t x, int16_t y, uint16_t color) {
@@ -1118,7 +1145,7 @@ boolean Grafx_esp::getBitmapPixel(const uint8_t* bitmap, uint16_t x, uint16_t y)
 }
 
 void Grafx_esp::drawTilemap(int x, int y, const uint16_t *tilemap, const uint8_t **spritesheet, uint16_t * palette){
-	drawTilemap(x, y, tilemap, spritesheet, 0, 0, Grafx_TFTWIDTH, Grafx_TFTHEIGHT, palette);
+	drawTilemap(x, y, tilemap, spritesheet, 0, 0, Grafx_TFTHEIGHT, Grafx_TFTWIDTH, palette);
 }
 void Grafx_esp::drawTilemap(int x, int y, const uint16_t *tilemap, const uint8_t **spritesheet, uint16_t dx, uint16_t dy, uint16_t dw, uint16_t dh, uint16_t * palette){
 	uint8_t tilemap_width = pgm_read_byte(tilemap);
@@ -1916,17 +1943,20 @@ void Grafx_esp::writeRectNBPP(int16_t x, int16_t y, int16_t w, int16_t h, uint8_
 
 #ifdef ENABLE_Grafx_FRAMEBUFFER
 	if (_use_fbtft) {
+//		uint16_t * pfbPixel_row = &_pfbtft[ y*_width + x];
 		for (; h>0; h--) {
 			uint16_t * pfbPixel = mapYtoFBPtr(y) + x;
 			pixels = pixels_row_start;				// setup for this row
 			uint8_t pixel_shift = row_shift_init;			// Setup mask
-
+                    int16_t x_out = x; 
 			for (int i = 0; i < w; i++) {
 ///				*pfbPixel++ = FBmapColor(palette[((*pixels) >> pixel_shift) & pixel_bit_mask]);
 				uint8_t palette_index = ((*pixels)>>pixel_shift) & pixel_bit_mask;
                 if (palette_index != TRANSPARENT_INDEX)
-                *pfbPixel = palette[palette_index];
-                *pfbPixel++;
+                	Pixel(x_out, y, palette[palette_index]); // *pfbPixel++;
+ //               *pfbPixel = palette[palette_index];
+
+           
 				if (!pixel_shift) {
 					pixel_shift = 8 - bits_per_pixel;	//setup next mask
 					pixels++;
@@ -1934,9 +1964,10 @@ void Grafx_esp::writeRectNBPP(int16_t x, int16_t y, int16_t w, int16_t h, uint8_
 				else {
 					pixel_shift -= bits_per_pixel;
 				}
+				x_out++;
 			}
-			y++;
 			pixels_row_start += count_of_bytes_per_row;
+			y++;
 		}
 		return;
 
@@ -2780,51 +2811,5 @@ void Grafx_esp::drawFontBits(bool opaque, uint32_t bits, uint32_t numbits, int32
 			}
 		}
 	}
-}
-
-void Adafruit_GFX_Button::initButton(Grafx_esp *gfx,
-	int16_t x, int16_t y, uint8_t w, uint8_t h,
-	uint16_t outline, uint16_t fill, uint16_t textcolor,
-	const char *label, uint8_t textsize)
-{
-	_x = x;
-	_y = y;
-	_w = w;
-	_h = h;
-	_outlinecolor = outline;
-	_fillcolor = fill;
-	_textcolor = textcolor;
-	_textsize = textsize;
-	_gfx = gfx;
-	strncpy(_label, label, 9);
-	_label[9] = 0;
-}
-
-void Adafruit_GFX_Button::drawButton(bool inverted)
-{
-	uint16_t fill, outline, text;
-
-	if (! inverted) {
-		fill = _fillcolor;
-		outline = _outlinecolor;
-		text = _textcolor;
-	} else {
-		fill =  _textcolor;
-		outline = _outlinecolor;
-		text = _fillcolor;
-	}
-	_gfx->fillRoundRect(_x - (_w/2), _y - (_h/2), _w, _h, min(_w,_h)/4, fill);
-	_gfx->drawRoundRect(_x - (_w/2), _y - (_h/2), _w, _h, min(_w,_h)/4, outline);
-	_gfx->setCursor(_x - strlen(_label)*3*_textsize, _y-4*_textsize);
-	_gfx->setTextColor(text);
-	_gfx->setTextSize(_textsize);
-	_gfx->print(_label);
-}
-
-bool Adafruit_GFX_Button::contains(int16_t x, int16_t y)
-{
-	if ((x < (_x - _w/2)) || (x > (_x + _w/2))) return false;
-	if ((y < (_y - _h/2)) || (y > (_y + _h/2))) return false;
-	return true;
 }
 
