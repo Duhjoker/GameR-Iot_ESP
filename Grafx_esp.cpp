@@ -823,7 +823,7 @@ void Grafx_esp::drawPolygon(int16_t cx, int16_t cy, uint8_t sides, int16_t diame
 }
 
 //#include "glcdfont.c"
-//extern "C" const unsigned char glcdfont[];
+extern "C" const unsigned char glcdfont[];
 
 // Draw a circle outline
 void Grafx_esp::drawCircle(int16_t x0, int16_t y0, int16_t r,
@@ -1054,6 +1054,24 @@ void Grafx_esp::fillRoundRect(int16_t x, int16_t y, int16_t w,
 // Draw a 1 - bit image(bitmap) at the specified(x, y) position from the
 // provided bitmap buffer (must be PROGMEM memory) using the specified
 // foreground color (unset bits are transparent).
+void Grafx_esp::drawBitmap(int16_t x, int16_t y,
+			      const uint8_t *bitmap, int16_t w, int16_t h,
+			      uint16_t color) {
+
+  int16_t i, j, byteWidth = (w + 7) / 8;
+
+  for(j=0; j<h; j++) {
+    for(i=0; i<w; i++ ) {
+      if(pgm_read_byte(bitmap + j * byteWidth + i / 8) & (128 >> (i & 7))) {
+	drawPixel(x+i, y+j, color);
+      }
+    }
+  }
+}
+
+// Draw a 1 - bit image(bitmap) at the specified(x, y) position from the
+// provided bitmap buffer (must be PROGMEM memory) using the specified
+// foreground color (unset bits are transparent).
 void Grafx_esp::drawBitmap1(int16_t x, int16_t y,
 const uint8_t *bitmap, int16_t w, int16_t h, uint16_t color) {
 
@@ -1120,17 +1138,17 @@ void Grafx_esp::drawBitmap4(int16_t x, int16_t y,
 	}
 }
 
-void Grafx_esp::drawBitmapTM(int8_t x, int8_t y, int8_t w, int8_t h, const uint8_t *bitmap, uint8_t dx, uint8_t dy, uint8_t dw, uint8_t dh, uint16_t color) {
-	int8_t i, j, byteWidth = (w + 7) / 8;
+void Grafx_esp::drawBitmapTM(int16_t x, int16_t y, int16_t w, int16_t h, const uint8_t *bitmap, uint16_t dx, uint16_t dy, uint16_t dw, uint16_t dh, uint16_t color) {
+	int16_t i, j, byteWidth = (w + 7) / 8;
 	dw += dx;
 	dh += dy;
-//	int8_t largest = 0;
-//	int8_t largesty = 0;
+//	int32_t largest = 0;
+//	int32_t largesty = 0;
 	for (j = 0; j < h; j++) {
 		for (i = 0; i < w; i++) {
 			if (pgm_read_byte(bitmap + j * byteWidth + i / 8) & (B10000000 >> (i % 8))) {
-				int8_t drawX = x + i;
-				int8_t drawY = y + j;
+				int16_t drawX = x + i;
+				int16_t drawY = y + j;
 
 				if (drawX >= dx && drawX < dw && drawY >= dy && drawY < dh){
 					drawPixel(drawX, drawY, color);
@@ -1144,15 +1162,21 @@ boolean Grafx_esp::getBitmapPixel(const uint8_t* bitmap, uint16_t x, uint16_t y)
 	return pgm_read_byte(bitmap + 2 + y * ((pgm_read_byte(bitmap) + 7) / 8) + (x >> 3)) & (B10000000 >> (x % 8));
 }
 
-void Grafx_esp::drawTilemap(int x, int y, const uint16_t *tilemap, const uint8_t **spritesheet, uint16_t * palette){
+void Grafx_esp::drawTilemap(uint16_t x, uint16_t y, const uint16_t *tilemap, const uint16_t **spritesheet, const uint16_t * palette){
 	drawTilemap(x, y, tilemap, spritesheet, 0, 0, Grafx_TFTHEIGHT, Grafx_TFTWIDTH, palette);
 }
-void Grafx_esp::drawTilemap(int x, int y, const uint16_t *tilemap, const uint8_t **spritesheet, uint16_t dx, uint16_t dy, uint16_t dw, uint16_t dh, uint16_t * palette){
-	uint8_t tilemap_width = pgm_read_byte(tilemap);
-	uint8_t tilemap_height = pgm_read_byte(tilemap + 1);
-	uint8_t tile_width = pgm_read_byte(tilemap + 2);
-	uint8_t tile_height = pgm_read_byte(tilemap + 3);
-	tilemap += 4; // now the first tiyleis at tilemap
+
+void Grafx_esp::drawTilemap(uint16_t x, uint16_t y, const uint16_t *tilemap, const uint16_t **spritesheet, uint16_t dx, uint16_t dy, uint16_t dw, uint16_t dh, const uint16_t * palette){
+ //  uint8_t tilemap_width = pgm_read_byte(tilemap);
+//   uint8_t tilemap_height = pgm_read_byte(tilemap + 1);
+//   uint8_t tile_width = pgm_read_byte(tilemap + 2);
+//   uint8_t tile_height = pgm_read_byte(tilemap + 3);
+//   tilemap += 4; // now the first tiyleis at tilemap
+ uint16_t tilemap_width = pgm_read_byte(tilemap)* 256 + pgm_read_byte(tilemap + 1);
+ uint16_t tilemap_height = pgm_read_byte(tilemap + 2)* 256 + pgm_read_byte(tilemap + 3);
+ uint16_t tile_width = pgm_read_byte(tilemap + 4);
+ uint16_t tile_height = pgm_read_byte(tilemap + 5);
+ tilemap += 6; // now the first tile is at tilemap
 
 	uint16_t ddw = dw + dx;
 	uint16_t ddh = dh + dy;
@@ -1181,6 +1205,7 @@ void Grafx_esp::drawTilemap(int x, int y, const uint16_t *tilemap, const uint8_t
 			uint16_t tile = pgm_read_byte(tilemap + ddy*tilemap_width + ddx);
 			if (drawX >= dx && drawY >= dy && drawX <= (ddw - tile_width) && drawY <= (ddh - tile_height)){
 				writeRectNBPP(drawX, drawY,tile_width, tile_height, 4, spritesheet[tile], palette );
+
 				if (flagcollision){
 					solid[numcolision].x = drawX;                     //Save X coordinate      - ADD by Summoner123
 					solid[numcolision].y = drawY;                     //Save Y coordinate      - ADD by Summoner123
@@ -1244,61 +1269,14 @@ boolean Grafx_esp::collideBitmapBitmap(int16_t x1, int16_t y1, const uint8_t* b1
 //////////////---------------------------text------------------------//////////////
 ///////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////
-
 // Draw a character
-void Grafx_esp::drawChar(int16_t x, int16_t y, unsigned char c, uint16_t color, uint16_t bg, uint8_t size) {
-	if ((x >= _width) || // Clip right
-		(y >= _height) || // Clip bottom
-		((x + 6 * size - 1) < 0) || // Clip left
-		((y + 8 * size - 1) < 0))   // Clip top
-		return;
-	if (c < fontStart || c > fontStart + fontLength) {
-		c = 0;
-	}
-	else {
-		c -= fontStart;
-	}
-
-	uint16_t bitCount = 0;
-	uint16_t line = 0;
-	uint16_t i, j;
-	int fontIndex = (c*(fontWidth*fontHeight) / 8) + 4;
-	for (i = 0; i<fontHeight; i++) {
-		//uint8_t line;
-		for (j = 0; j<fontWidth; j++) {
-			if (bitCount++ % 8 == 0) {
-				line = pgm_read_byte(fontData + fontIndex++);
-			}
-			if (line & 0x80) {
-				if (size > 1) {//big
-					fillRect(x + (j*size), y + (i*size), size, size, color);
-				}
-				else {  // default size
-					drawPixel(x + j, y + i, color);
-				}
-			}
-			else if (bg != color) {
-				if (size > 1) {// big
-					fillRect(x + (j*size), y + (i*size), size, size, bg);
-				}
-				else {  // def size
-					drawPixel(x + j, y + i, bg);
-				}
-			}
-			line <<= 1;
-		}
-	}
-}
-
-
-// Draw a character
-/*void Grafx_esp::drawChar(int16_t x, int16_t y, unsigned char c,
-uint16_t fgcolor, uint16_t bgcolor, uint8_t size)
+void Grafx_esp::drawChar(int16_t x, int16_t y, unsigned char c,
+			    uint16_t fgcolor, uint16_t bgcolor, uint8_t size)
 {
-	if ((x >= _width) || // Clip right
-		(y >= _height) || // Clip bottom
-		((x + 6 * size - 1) < 0) || // Clip left  TODO: is this correct?
-		((y + 8 * size - 1) < 0))   // Clip top   TODO: is this correct?
+	if((x >= _width)            || // Clip right
+	   (y >= _height)           || // Clip bottom
+	   ((x + 6 * size - 1) < 0) || // Clip left  TODO: is this correct?
+	   ((y + 8 * size - 1) < 0))   // Clip top   TODO: is this correct?
 		return;
 
 	if (fgcolor == bgcolor) {
@@ -1306,9 +1284,9 @@ uint16_t fgcolor, uint16_t bgcolor, uint8_t size)
 		if (size == 1) {
 			uint8_t mask = 0x01;
 			int16_t xoff, yoff;
-			for (yoff = 0; yoff < 8; yoff++) {
+			for (yoff=0; yoff < 8; yoff++) {
 				uint8_t line = 0;
-				for (xoff = 0; xoff < 5; xoff++) {
+				for (xoff=0; xoff < 5; xoff++) {
 					if (glcdfont[c * 5 + xoff] & mask) line |= 1;
 					line <<= 1;
 				}
@@ -1318,40 +1296,34 @@ uint16_t fgcolor, uint16_t bgcolor, uint8_t size)
 					if (line == 0x1F) {
 						drawFastHLine(x + xoff, y + yoff, 5, fgcolor);
 						break;
-					}
-					else if (line == 0x1E) {
+					} else if (line == 0x1E) {
 						drawFastHLine(x + xoff, y + yoff, 4, fgcolor);
 						break;
-					}
-					else if ((line & 0x1C) == 0x1C) {
+					} else if ((line & 0x1C) == 0x1C) {
 						drawFastHLine(x + xoff, y + yoff, 3, fgcolor);
 						line <<= 4;
 						xoff += 4;
-					}
-					else if ((line & 0x18) == 0x18) {
+					} else if ((line & 0x18) == 0x18) {
 						drawFastHLine(x + xoff, y + yoff, 2, fgcolor);
 						line <<= 3;
 						xoff += 3;
-					}
-					else if ((line & 0x10) == 0x10) {
+					} else if ((line & 0x10) == 0x10) {
 						drawPixel(x + xoff, y + yoff, fgcolor);
 						line <<= 2;
 						xoff += 2;
-					}
-					else {
+					} else {
 						line <<= 1;
 						xoff += 1;
 					}
 				}
 				mask = mask << 1;
 			}
-		}
-		else {
+		} else {
 			uint8_t mask = 0x01;
 			int16_t xoff, yoff;
-			for (yoff = 0; yoff < 8; yoff++) {
+			for (yoff=0; yoff < 8; yoff++) {
 				uint8_t line = 0;
-				for (xoff = 0; xoff < 5; xoff++) {
+				for (xoff=0; xoff < 5; xoff++) {
 					if (glcdfont[c * 5 + xoff] & mask) line |= 1;
 					line <<= 1;
 				}
@@ -1362,31 +1334,26 @@ uint16_t fgcolor, uint16_t bgcolor, uint8_t size)
 						fillRect(x + xoff * size, y + yoff * size,
 							5 * size, size, fgcolor);
 						break;
-					}
-					else if (line == 0x1E) {
+					} else if (line == 0x1E) {
 						fillRect(x + xoff * size, y + yoff * size,
 							4 * size, size, fgcolor);
 						break;
-					}
-					else if ((line & 0x1C) == 0x1C) {
+					} else if ((line & 0x1C) == 0x1C) {
 						fillRect(x + xoff * size, y + yoff * size,
 							3 * size, size, fgcolor);
 						line <<= 4;
 						xoff += 4;
-					}
-					else if ((line & 0x18) == 0x18) {
+					} else if ((line & 0x18) == 0x18) {
 						fillRect(x + xoff * size, y + yoff * size,
 							2 * size, size, fgcolor);
 						line <<= 3;
 						xoff += 3;
-					}
-					else if ((line & 0x10) == 0x10) {
+					} else if ((line & 0x10) == 0x10) {
 						fillRect(x + xoff * size, y + yoff * size,
 							size, size, fgcolor);
 						line <<= 2;
 						xoff += 2;
-					}
-					else {
+					} else {
 						line <<= 1;
 						xoff += 1;
 					}
@@ -1394,8 +1361,7 @@ uint16_t fgcolor, uint16_t bgcolor, uint8_t size)
 				mask = mask << 1;
 			}
 		}
-	}
-	else {
+	} else {
 		// This solid background approach is about 5 time faster
 		uint8_t xc, yc;
 		uint8_t xr, yr;
@@ -1403,44 +1369,43 @@ uint16_t fgcolor, uint16_t bgcolor, uint8_t size)
 		uint16_t color;
 
 		// We need to offset by the origin.
-		x += _originx;
-		y += _originy;
+		x+=_originx;
+		y+=_originy;
 		int16_t x_char_start = x;  // remember our X where we start outputting...
 
-		if ((x >= _displayclipx2) || // Clip right
-			(y >= _displayclipy2) || // Clip bottom
-			((x + 6 * size - 1) < _displayclipx1) || // Clip left  TODO: this is not correct
-			((y + 8 * size - 1) < _displayclipy1))   // Clip top   TODO: this is not correct
+		if((x >= _displayclipx2)            || // Clip right
+			 (y >= _displayclipy2)           || // Clip bottom
+			 ((x + 6 * size - 1) < _displayclipx1) || // Clip left  TODO: this is not correct
+			 ((y + 8 * size - 1) < _displayclipy1))   // Clip top   TODO: this is not correct
 			return;
 
 
-#ifdef ENABLE_Grafx_FRAMEBUFFER
+		#ifdef ENABLE_Grafx_FRAMEBUFFER
 		if (_use_fbtft) {
 			fgcolor = FBmapColor(fgcolor);
-			bgcolor = FBmapColor(bgcolor);
+			bgcolor = FBmapColor(bgcolor); 
 
-			uint16_t * pfbPixel_row = &_pfbtft[y*_width + x];
-			for (yc = 0; (yc < 8) && (y < _displayclipy2); yc++) {
-				for (yr = 0; (yr < size) && (y < _displayclipy2); yr++) {
+			uint16_t * pfbPixel_row = &_pfbtft[ y*_width + x];
+			for (yc=0; (yc < 8) && (y < _displayclipy2); yc++) {
+				for (yr=0; (yr < size) && (y < _displayclipy2); yr++) {
 					x = x_char_start; 		// get our first x position...
 					if (y >= _displayclipy1) {
 						uint16_t * pfbPixel = pfbPixel_row;
-						for (xc = 0; xc < 5; xc++) {
+						for (xc=0; xc < 5; xc++) {
 							if (glcdfont[c * 5 + xc] & mask) {
 								color = fgcolor;
-							}
-							else {
+							} else {
 								color = bgcolor;
 							}
-							for (xr = 0; xr < size; xr++) {
+							for (xr=0; xr < size; xr++) {
 								if ((x >= _displayclipx1) && (x < _displayclipx2)) {
-									*pfbPixel = color;
+									*pfbPixel =  color;
 								}
 								pfbPixel++;
 								x++;
 							}
 						}
-						for (xr = 0; xr < size; xr++) {
+						for (xr=0; xr < size; xr++) {
 							if ((x >= _displayclipx1) && (x < _displayclipx2)) {
 								*pfbPixel = bgcolor;
 							}
@@ -1454,44 +1419,42 @@ uint16_t fgcolor, uint16_t bgcolor, uint8_t size)
 				mask = mask << 1;
 			}
 
-		}
-		else
-#endif
+		} else 
+		#endif
 		{
 			// need to build actual pixel rectangle we will output into.
 			int16_t y_char_top = y;	// remember the y
-			int16_t w = 6 * size;
+			int16_t w =  6 * size;
 			int16_t h = 8 * size;
 
-			if (x < _displayclipx1) { w -= (_displayclipx1 - x); x = _displayclipx1; }
-			if ((x + w - 1) >= _displayclipx2)  w = _displayclipx2 - x;
-			if (y < _displayclipy1) { h -= (_displayclipy1 - y); y = _displayclipy1; }
-			if ((y + h - 1) >= _displayclipy2) h = _displayclipy2 - y;
+			if(x < _displayclipx1) {	w -= (_displayclipx1-x); x = _displayclipx1; 	}
+			if((x + w - 1) >= _displayclipx2)  w = _displayclipx2  - x;
+			if(y < _displayclipy1) {	h -= (_displayclipy1 - y); y = _displayclipy1; 	}
+			if((y + h - 1) >= _displayclipy2) h = _displayclipy2 - y;
 
 			beginSPITransaction();
-			setAddr(x, y, x + w - 1, y + h - 1);
+			setAddr(x, y, x + w -1, y + h - 1);
 
 			y = y_char_top;	// restore the actual y.
 			writecommand_cont(Grafx_RAMWR);
-			for (yc = 0; (yc < 8) && (y < _displayclipy2); yc++) {
-				for (yr = 0; (yr < size) && (y < _displayclipy2); yr++) {
+			for (yc=0; (yc < 8) && (y < _displayclipy2); yc++) {
+				for (yr=0; (yr < size) && (y < _displayclipy2); yr++) {
 					x = x_char_start; 		// get our first x position...
 					if (y >= _displayclipy1) {
-						for (xc = 0; xc < 5; xc++) {
+						for (xc=0; xc < 5; xc++) {
 							if (glcdfont[c * 5 + xc] & mask) {
 								color = fgcolor;
-							}
-							else {
+							} else {
 								color = bgcolor;
 							}
-							for (xr = 0; xr < size; xr++) {
+							for (xr=0; xr < size; xr++) {
 								if ((x >= _displayclipx1) && (x < _displayclipx2)) {
 									writedata16_cont(color);
 								}
 								x++;
 							}
 						}
-						for (xr = 0; xr < size; xr++) {
+						for (xr=0; xr < size; xr++) {
 							if ((x >= _displayclipx1) && (x < _displayclipx2)) {
 								writedata16_cont(bgcolor);
 							}
@@ -1506,7 +1469,7 @@ uint16_t fgcolor, uint16_t bgcolor, uint8_t size)
 			endSPITransaction();
 		}
 	}
-}*/
+}
 
 void Grafx_esp::setTextColor(uint16_t c) {
 	// For 'transparent' background, we'll set the bg
@@ -1575,6 +1538,153 @@ uint8_t Grafx_esp::getRotation(void) {
 	return rotation;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////POPUP/TITLESCREEN///////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////
+///////////////// up to two lines text
+void Grafx_esp::Popup(const __FlashStringHelper* text, uint8_t s, int16_t x, int16_t y){
+	    popupText = text;
+          textsize = (s > 0) ? s : 1;
+		
+          fillRoundRect(40,10,245,40,4,BLUE);
+          drawRoundRect(40,10,245,40,4,WHITE);
+
+             if (x < 0) x = 0;
+	    else if (x >= _width) x = _width - 1;
+	    cursor_x = x;
+	         if (y < 0) y = 0;
+	    else if (y >= _height) y = _height - 1;
+	    cursor_y = y;
+		print(popupText);
+		
+	
+}
+
+///////////////// bubble will hold up to 4 lines text
+void Grafx_esp::Popup2(const __FlashStringHelper* text, uint8_t s, int16_t x, int16_t y){
+	    popupText = text;
+          textsize = (s > 0) ? s : 1;
+		
+          fillRoundRect(40,10,245,80,4,BLUE);
+          drawRoundRect(40,10,245,80,4,WHITE);
+
+             if (x < 0) x = 0;
+	    else if (x >= _width) x = _width - 1;
+	    cursor_x = x;
+	         if (y < 0) y = 0;
+	    else if (y >= _height) y = _height - 1;
+	    cursor_y = y;
+		print(popupText);
+		
+	
+}
+
+void Grafx_esp::Popup3(const __FlashStringHelper* text, uint8_t s, int16_t x, int16_t y){
+        popupText = text;
+          textsize = (s > 0) ? s : 1;
+       if (x < 0) x = 0;
+	    else if (x >= _width) x = _width - 1;
+	    cursor_x = x;
+	         if (y < 0) y = 0;
+	    else if (y >= _height) y = _height - 1;
+	    cursor_y = y;
+		print(popupText);
+}
+
+/*void GrafxT3::Popup(const __FlashStringHelper* text){
+	    popupText = text;
+        setTextSize(2);
+        fillRoundRect(0,0,320,60,4,BLUE);
+        drawRoundRect(0,0,320,60,4,WHITE);
+        setCursor(20,20);
+		print(popupText);
+		
+	
+}*/
+
+/*void GrafxT3::titleScreen(const __FlashStringHelper* name){
+	titleScreen(name, 0);
+}
+
+void GrafxT3::titleScreen(const uint8_t* logo){
+	titleScreen(F(""), logo);
+}
+
+void GrafxT3::titleScreen(){
+	titleScreen(F(""));
+}*/
+
+
+/*void GrafxT3::titleScreen(const __FlashStringHelper*  name, const uint8_t *logo){
+	if(startMenuTimer){
+		textsize = 1;
+		textWrap = false;
+		persistence = false;
+		fillScreen(BLACK);
+		while(1){
+			if(update()){
+				uint8_t logoOffset = pgm_read_byte(name)?textsize:0; //add an offset the logo when there is a name to display
+				//draw graphics
+				#if GrafxT3_TFTWIDTH;
+				drawBitmap1(0,0, gamebuinoLogo,84,10,BLACK);
+				if(logo){
+					drawBitmap1(0, 12+logoOffset, logo,84,10,GREEN);
+				}
+				cursor_x = 0;
+				cursor_y = 12; 
+				#else
+			    	drawBitmap(7,0, gamebuinoLogo,84,10,BLACK);
+			    	drawBitmap(-41,12,gamebuinoLogo,84,10,GREEN);
+				if(logo){
+			        drawBitmap(0, 24+logoOffset, logo,84,10,BLUE);
+				}
+				cursor_x = 0;
+				cursor_y = 24; 
+				#endif
+				print(name);
+				
+				//A button
+				cursor_x = Grafx_TFTWIDTH - display.fontWidth*3 -1;
+				cursor_y = GrafxT3_TFTHEIGHT - display.fontHeight*3 - 3;
+				if((frameCount/16)%2)
+				  println(F("\25 \20"));
+				else
+				  println(F("\25\20 "));
+				//B button
+				display.cursorX = LCDWIDTH - display.fontWidth*3 - 1;
+				display.cursorY++;
+				if(sound.globalVolume)
+					display.println(F("\26\23\24"));
+				else
+					display.println(F("\26\23x"));
+				//C button
+				display.cursorX = LCDWIDTH - display.fontWidth*3 - 1;
+				display.cursorY++;
+				display.println(F("\27SD"));
+				
+				//toggle volume when B is pressed
+				if(buttons.pressed(BTN_B)){
+					sound.setVolume(sound.globalVolume+1);
+					sound.playTick();
+				}
+				//leave the menu
+				if(buttons.pressed(BTN_A) || ((frameCount>=startMenuTimer)&&(startMenuTimer != 255))){
+					startMenuTimer = 255; //don't automatically skip the title screen next time it's displayed
+					sound.stopPattern(0);
+					sound.playOK();
+					break;
+				}
+				//flash the loader
+				if(buttons.pressed(BTN_C))
+					changeGame();
+			}
+		}
+		battery.show = true;
+	}
+}
+*/
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
 //////////////-----------------------Cursor------------------------------//////////////
@@ -1769,7 +1879,7 @@ void Grafx_esp::writeRect(int16_t x, int16_t y, int16_t w, int16_t h, const uint
 // writeRect8BPP - 	write 8 bit per pixel paletted bitmap
 //					bitmap data in array at pixels, one byte per pixel
 //					color palette data in array at palette
-void Grafx_esp::writeRect8BPP(int16_t x, int16_t y, int16_t w, int16_t h, const uint8_t *pixels, const uint16_t * palette)
+void Grafx_esp::writeRect8BPP(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t *pixels, const uint16_t * palette)
 {
 	//Serial.printf("\nWR8: %d %d %d %d %x\n", x, y, w, h, (uint32_t)pixels);
 	x += _originx;
@@ -1843,7 +1953,7 @@ void Grafx_esp::writeRect8BPP(int16_t x, int16_t y, int16_t w, int16_t h, const 
 //					bitmap data in array at pixels, 4 bits per pixel
 //					color palette data in array at palette
 //					width must be at least 2 pixels
-void Grafx_esp::writeRect4BPP(int16_t x, int16_t y, int16_t w, int16_t h, const uint8_t *pixels, const uint16_t * palette)
+void Grafx_esp::writeRect4BPP(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t *pixels, const uint16_t * palette)
 {
 	// Simply call through our helper
 	writeRectNBPP(x, y, w, h, 4, pixels, palette);
@@ -1852,7 +1962,7 @@ void Grafx_esp::writeRect4BPP(int16_t x, int16_t y, int16_t w, int16_t h, const 
 ///////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
-void Grafx_esp::writeRect4BPPtm(int16_t x, int16_t y, int16_t w, int16_t h, const uint8_t *pixels, uint16_t dx, uint16_t dy, uint16_t dw, uint16_t dh, const uint16_t * palette )
+void Grafx_esp::writeRect4BPPtm(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t *pixels, uint16_t dx, uint16_t dy, uint16_t dw, uint16_t dh, const uint16_t * palette )
 {
 	dw += dx;
 	dh += dy;{
@@ -1871,7 +1981,7 @@ void Grafx_esp::writeRect4BPPtm(int16_t x, int16_t y, int16_t w, int16_t h, cons
 //					bitmap data in array at pixels, 4 bits per pixel
 //					color palette data in array at palette
 //					width must be at least 4 pixels
-void Grafx_esp::writeRect2BPP(int16_t x, int16_t y, int16_t w, int16_t h, const uint8_t *pixels, const uint16_t * palette)
+void Grafx_esp::writeRect2BPP(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t *pixels, const uint16_t * palette)
 {
 	// Simply call through our helper
 	writeRectNBPP(x, y, w, h, 2, pixels, palette);
@@ -1883,7 +1993,7 @@ void Grafx_esp::writeRect2BPP(int16_t x, int16_t y, int16_t w, int16_t h, const 
 //					bitmap data in array at pixels, 4 bits per pixel
 //					color palette data in array at palette
 //					width must be at least 8 pixels
-void Grafx_esp::writeRect1BPP(int16_t x, int16_t y, int16_t w, int16_t h, const uint8_t *pixels, const uint16_t * palette)
+void Grafx_esp::writeRect1BPP(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t *pixels, const uint16_t * palette)
 {
 	// Simply call through our helper
 	writeRectNBPP(x, y, w, h, 1, pixels, palette);
@@ -1896,7 +2006,7 @@ void Grafx_esp::writeRect1BPP(int16_t x, int16_t y, int16_t w, int16_t h, const 
 //					bitmap data in array at pixels
 //  Currently writeRect1BPP, writeRect2BPP, writeRect4BPP use this to do all of the work. 
 void Grafx_esp::writeRectNBPP(int16_t x, int16_t y, int16_t w, int16_t h, uint8_t bits_per_pixel,
-	const uint8_t *pixels, const uint16_t * palette)
+	const uint16_t *pixels, const uint16_t * palette)
 {
 	//Serial.printf("\nWR8: %d %d %d %d %x\n", x, y, w, h, (uint32_t)pixels);
 	x += _originx;
@@ -1939,7 +2049,7 @@ void Grafx_esp::writeRectNBPP(int16_t x, int16_t y, int16_t w, int16_t h, uint8_
 		w = _displayclipx2 - x;
 	}
 
-	const uint8_t * pixels_row_start = pixels;  // remember our starting position offset into row
+	const uint16_t * pixels_row_start = pixels;  // remember our starting position offset into row
 
 #ifdef ENABLE_Grafx_FRAMEBUFFER
 	if (_use_fbtft) {

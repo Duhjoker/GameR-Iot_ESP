@@ -1,7 +1,7 @@
 #ifndef _ILI9341_esp_font_ArialBold_
 #define _ILI9341_esp_font_ArialBold_
 
-#include "ILI9341_esp.h"
+#include "Grafx_esp.h"
 
 #ifdef __cplusplus
 extern "C" {
