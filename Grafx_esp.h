@@ -58,13 +58,8 @@
 #define _Grafx_esp_H_
 #define  Grafx_USE_DMAMEM
 
-// Allow us to enable or disable capabilities, particully Frame Buffer and Clipping for speed and size
-#ifndef DISABLE_GrafxT3_FRAMEBUFFER
-#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
-#define ENABLE_GrafxT3_FRAMEBUFFER
-#endif
-#endif
 
+#define ENABLE_Grafx_FRAMEBUFFER
 
 // Allow way to override using SPI
 
@@ -272,28 +267,28 @@ class Grafx_esp : public Print
 //////////////-----------------------------Bitmap-----------------------------//////////////
 ////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////
+    void        drawBitmap(int16_t x, int16_t y, const uint8_t *bitmap, int16_t w, int16_t h, uint16_t color);
     void        drawBitmap1(int16_t x, int16_t y, const uint8_t *bitmap, int16_t w, int16_t h, uint16_t color);
 	void        drawBitmap2(int16_t x, int16_t y, const uint8_t *bitmap, int16_t w, int16_t h, uint16_t color, uint16_t bg);
 	void        drawBitmap3(int16_t x, int16_t y, uint8_t *bitmap, int16_t w, int16_t h, uint16_t color);
 	void        drawBitmap4(int16_t x, int16_t y, uint8_t *bitmap, int16_t w, int16_t h, uint16_t color, uint16_t bg);
 	
-    void        drawBitmapTM(int8_t x, int8_t y, int8_t w, int8_t h, const uint8_t *bitmap, uint8_t dx, uint8_t dy, uint8_t dw, uint8_t dh, uint16_t color);
+    void        drawBitmapTM(int16_t x, int16_t y, int16_t w, int16_t h, const uint8_t *bitmap, uint16_t dx, uint16_t dy, uint16_t dw, uint16_t dh,  uint16_t color);
 	boolean     getBitmapPixel(const uint8_t* bitmap, uint16_t x, uint16_t y);
 
-	void        drawTilemap(int x, int y, const uint16_t *tilemap, const uint8_t **spritesheet, uint16_t * palette);
-	void        drawTilemap(int x, int y, const uint16_t *tilemap, const uint8_t **spritesheet, uint16_t dx, uint16_t dy, uint16_t dw, uint16_t dh, uint16_t * palette);
+	void        drawTilemap(uint16_t x, uint16_t y, const uint16_t *tilemap, const uint16_t **spritesheet, const uint16_t * palette);
+	void        drawTilemap(uint16_t x, uint16_t y, const uint16_t *tilemap, const uint16_t **spritesheet, uint16_t dx, uint16_t dy, uint16_t dw, uint16_t dh, const uint16_t * palette);
 
 	typedef struct {       //line 171 "Public Variables   - ADD by Summoner123
-		int x;                    //X coordinate                 - ADD by Summoner123
-		int y;                    //Y coordinate                 - ADD by Summoner123
-		const byte *spritecol;    //Sprite of object             - ADD by Summoner123
+		uint16_t x;                    //X coordinate                 - ADD by Summoner123
+		uint16_t y;                    //Y coordinate                 - ADD by Summoner123
+		const uint16_t *spritecol;    //Sprite of object             - ADD by Summoner123
 	}object;
-	object solid[300];         // Matriz were saved a Sprite, X and Y cordinates of all tiles on the screen - ADD by Summoner123
+	object solid[400];         // Matriz were saved a Sprite, X and Y cordinates of all tiles on the screen - ADD by Summoner123
 
-	int numcolision = 3;     //count of solid objects indacat how many tiles drawed on the screen - ADD by Summoner123
+	uint16_t numcolision = 4;     //count of solid objects indacat how many tiles drawed on the screen - ADD by Summoner123
 
 	bool flagcollision = true;
-
 ////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////
 //////////////-----------------------------Collision--------------------------//////////////
@@ -318,6 +313,22 @@ class Grafx_esp : public Print
 	boolean     getTextWrap();
     void        setRotation(uint8_t r);
 	void        setFont(uint8_t f);
+////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////POPUP/TITLESCREEN///////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////
+    void Popup(const __FlashStringHelper* text, uint8_t s, int16_t x, int16_t y);
+    void Popup2(const __FlashStringHelper* text, uint8_t s, int16_t x, int16_t y);
+    void Popup3(const __FlashStringHelper* text, uint8_t s, int16_t x, int16_t y);
+    const __FlashStringHelper* popupText;
+    uint8_t popupTimeLeft;
+    
+//    void titleScreen(const __FlashStringHelper* name, const uint8_t *logo);
+//    void titleScreen(const __FlashStringHelper* name);
+//	  void titleScreen(const uint8_t* logo);
+//    void titleScreen();
+
 /////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////
 //////////////-------------------------Cursor----------------------------------//////////////
@@ -369,17 +380,17 @@ class Grafx_esp : public Print
 	// writeRect8BPP - 	write 8 bit per pixel paletted bitmap
 	//					bitmap data in array at pixels, one byte per pixel
 	//					color palette data in array at palette
-	void writeRect8BPP(int16_t x, int16_t y, int16_t w, int16_t h, const uint8_t *pixels, const uint16_t * palette );
+	void writeRect8BPP(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t *pixels, const uint16_t * palette );
 
 	// writeRect4BPP - 	write 4 bit per pixel paletted bitmap
 	//					bitmap data in array at pixels, 4 bits per pixel
 	//					color palette data in array at palette
 	//					width must be at least 2 pixels
-	void writeRect4BPP(int16_t x, int16_t y, int16_t w, int16_t h, const uint8_t *pixels, const uint16_t * palette );
+	void writeRect4BPP(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t *pixels, const uint16_t * palette );
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
-    void writeRect4BPPtm(int16_t x, int16_t y, int16_t w, int16_t h, const uint8_t *pixels, uint16_t dx, uint16_t dy, uint16_t dw, uint16_t dh, const uint16_t * palette );
+    void writeRect4BPPtm(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t *pixels, uint16_t dx, uint16_t dy, uint16_t dw, uint16_t dh, const uint16_t * palette );
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -388,20 +399,20 @@ class Grafx_esp : public Print
 	//					bitmap data in array at pixels, 4 bits per pixel
 	//					color palette data in array at palette
 	//					width must be at least 4 pixels
-	void writeRect2BPP(int16_t x, int16_t y, int16_t w, int16_t h, const uint8_t *pixels, const uint16_t * palette );
+	void writeRect2BPP(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t *pixels, const uint16_t * palette );
 	
 	// writeRect1BPP - 	write 1 bit per pixel paletted bitmap
 	//					bitmap data in array at pixels, 4 bits per pixel
 	//					color palette data in array at palette
 	//					width must be at least 8 pixels
-	void writeRect1BPP(int16_t x, int16_t y, int16_t w, int16_t h, const uint8_t *pixels, const uint16_t * palette );
+	void writeRect1BPP(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t *pixels, const uint16_t * palette );
 
 	// writeRectNBPP - 	write N(1, 2, 4, 8) bit per pixel paletted bitmap
 	//					bitmap data in array at pixels
 	//  Currently writeRect1BPP, writeRect2BPP, writeRect4BPP use this to do all of the work. 
 	// 
 	void writeRectNBPP(int16_t x, int16_t y, int16_t w, int16_t h,  uint8_t bits_per_pixel, 
-		const uint8_t *pixels, const uint16_t * palette );
+		const uint16_t *pixels, const uint16_t * palette );
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -679,38 +690,6 @@ protected:
 #define swap(a, b) { typeof(a) t = a; a = b; b = t; }
 #endif
 
-// To avoid conflict when also using Adafruit_GFX or any Adafruit library
-// which depends on Adafruit_GFX, #include the Adafruit library *BEFORE*
-// you #include Grafx_t3.h.
-#ifndef _ADAFRUIT_GFX_H
-class Adafruit_GFX_Button {
-public:
-	Adafruit_GFX_Button(void) { _gfx = NULL; }
-	void initButton(Grafx_esp *gfx, int16_t x, int16_t y,
-		uint8_t w, uint8_t h,
-		uint16_t outline, uint16_t fill, uint16_t textcolor,
-		const char *label, uint8_t textsize);
-	void drawButton(bool inverted = false);
-	bool contains(int16_t x, int16_t y);
-	void press(boolean p) {
-		laststate = currstate;
-		currstate = p;
-	}
-	bool isPressed() { return currstate; }
-	bool justPressed() { return (currstate && !laststate); }
-	bool justReleased() { return (!currstate && laststate); }
-private:
-	Grafx_esp *_gfx;
-	int16_t _x, _y;
-	uint16_t _w, _h;
-	uint8_t _textsize;
-	uint16_t _outlinecolor, _fillcolor, _textcolor;
-	char _label[10];
-	boolean currstate, laststate;
-};
-#endif
-
 #endif // __cplusplus
-
 
 #endif

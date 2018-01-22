@@ -1054,6 +1054,24 @@ void Grafx_esp::fillRoundRect(int16_t x, int16_t y, int16_t w,
 // Draw a 1 - bit image(bitmap) at the specified(x, y) position from the
 // provided bitmap buffer (must be PROGMEM memory) using the specified
 // foreground color (unset bits are transparent).
+void Grafx_esp::drawBitmap(int16_t x, int16_t y,
+			      const uint8_t *bitmap, int16_t w, int16_t h,
+			      uint16_t color) {
+
+  int16_t i, j, byteWidth = (w + 7) / 8;
+
+  for(j=0; j<h; j++) {
+    for(i=0; i<w; i++ ) {
+      if(pgm_read_byte(bitmap + j * byteWidth + i / 8) & (128 >> (i & 7))) {
+	drawPixel(x+i, y+j, color);
+      }
+    }
+  }
+}
+
+// Draw a 1 - bit image(bitmap) at the specified(x, y) position from the
+// provided bitmap buffer (must be PROGMEM memory) using the specified
+// foreground color (unset bits are transparent).
 void Grafx_esp::drawBitmap1(int16_t x, int16_t y,
 const uint8_t *bitmap, int16_t w, int16_t h, uint16_t color) {
 
@@ -1120,17 +1138,17 @@ void Grafx_esp::drawBitmap4(int16_t x, int16_t y,
 	}
 }
 
-void Grafx_esp::drawBitmapTM(int8_t x, int8_t y, int8_t w, int8_t h, const uint8_t *bitmap, uint8_t dx, uint8_t dy, uint8_t dw, uint8_t dh, uint16_t color) {
-	int8_t i, j, byteWidth = (w + 7) / 8;
+void Grafx_esp::drawBitmapTM(int16_t x, int16_t y, int16_t w, int16_t h, const uint8_t *bitmap, uint16_t dx, uint16_t dy, uint16_t dw, uint16_t dh, uint16_t color) {
+	int16_t i, j, byteWidth = (w + 7) / 8;
 	dw += dx;
 	dh += dy;
-//	int8_t largest = 0;
-//	int8_t largesty = 0;
+//	int32_t largest = 0;
+//	int32_t largesty = 0;
 	for (j = 0; j < h; j++) {
 		for (i = 0; i < w; i++) {
 			if (pgm_read_byte(bitmap + j * byteWidth + i / 8) & (B10000000 >> (i % 8))) {
-				int8_t drawX = x + i;
-				int8_t drawY = y + j;
+				int16_t drawX = x + i;
+				int16_t drawY = y + j;
 
 				if (drawX >= dx && drawX < dw && drawY >= dy && drawY < dh){
 					drawPixel(drawX, drawY, color);
@@ -1144,15 +1162,21 @@ boolean Grafx_esp::getBitmapPixel(const uint8_t* bitmap, uint16_t x, uint16_t y)
 	return pgm_read_byte(bitmap + 2 + y * ((pgm_read_byte(bitmap) + 7) / 8) + (x >> 3)) & (B10000000 >> (x % 8));
 }
 
-void Grafx_esp::drawTilemap(int x, int y, const uint16_t *tilemap, const uint8_t **spritesheet, uint16_t * palette){
+void Grafx_esp::drawTilemap(uint16_t x, uint16_t y, const uint16_t *tilemap, const uint16_t **spritesheet, const uint16_t * palette){
 	drawTilemap(x, y, tilemap, spritesheet, 0, 0, Grafx_TFTHEIGHT, Grafx_TFTWIDTH, palette);
 }
-void Grafx_esp::drawTilemap(int x, int y, const uint16_t *tilemap, const uint8_t **spritesheet, uint16_t dx, uint16_t dy, uint16_t dw, uint16_t dh, uint16_t * palette){
-	uint8_t tilemap_width = pgm_read_byte(tilemap);
-	uint8_t tilemap_height = pgm_read_byte(tilemap + 1);
-	uint8_t tile_width = pgm_read_byte(tilemap + 2);
-	uint8_t tile_height = pgm_read_byte(tilemap + 3);
-	tilemap += 4; // now the first tiyleis at tilemap
+
+void Grafx_esp::drawTilemap(uint16_t x, uint16_t y, const uint16_t *tilemap, const uint16_t **spritesheet, uint16_t dx, uint16_t dy, uint16_t dw, uint16_t dh, const uint16_t * palette){
+ //  uint8_t tilemap_width = pgm_read_byte(tilemap);
+//   uint8_t tilemap_height = pgm_read_byte(tilemap + 1);
+//   uint8_t tile_width = pgm_read_byte(tilemap + 2);
+//   uint8_t tile_height = pgm_read_byte(tilemap + 3);
+//   tilemap += 4; // now the first tiyleis at tilemap
+ uint16_t tilemap_width = pgm_read_byte(tilemap)* 256 + pgm_read_byte(tilemap + 1);
+ uint16_t tilemap_height = pgm_read_byte(tilemap + 2)* 256 + pgm_read_byte(tilemap + 3);
+ uint16_t tile_width = pgm_read_byte(tilemap + 4);
+ uint16_t tile_height = pgm_read_byte(tilemap + 5);
+ tilemap += 6; // now the first tile is at tilemap
 
 	uint16_t ddw = dw + dx;
 	uint16_t ddh = dh + dy;
@@ -1181,6 +1205,7 @@ void Grafx_esp::drawTilemap(int x, int y, const uint16_t *tilemap, const uint8_t
 			uint16_t tile = pgm_read_byte(tilemap + ddy*tilemap_width + ddx);
 			if (drawX >= dx && drawY >= dy && drawX <= (ddw - tile_width) && drawY <= (ddh - tile_height)){
 				writeRectNBPP(drawX, drawY,tile_width, tile_height, 4, spritesheet[tile], palette );
+
 				if (flagcollision){
 					solid[numcolision].x = drawX;                     //Save X coordinate      - ADD by Summoner123
 					solid[numcolision].y = drawY;                     //Save Y coordinate      - ADD by Summoner123
@@ -1575,6 +1600,153 @@ uint8_t Grafx_esp::getRotation(void) {
 	return rotation;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////POPUP/TITLESCREEN///////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////
+///////////////// up to two lines text
+void Grafx_esp::Popup(const __FlashStringHelper* text, uint8_t s, int16_t x, int16_t y){
+	    popupText = text;
+          textsize = (s > 0) ? s : 1;
+		
+          fillRoundRect(40,10,245,40,4,BLUE);
+          drawRoundRect(40,10,245,40,4,WHITE);
+
+             if (x < 0) x = 0;
+	    else if (x >= _width) x = _width - 1;
+	    cursor_x = x;
+	         if (y < 0) y = 0;
+	    else if (y >= _height) y = _height - 1;
+	    cursor_y = y;
+		print(popupText);
+		
+	
+}
+
+///////////////// bubble will hold up to 4 lines text
+void Grafx_esp::Popup2(const __FlashStringHelper* text, uint8_t s, int16_t x, int16_t y){
+	    popupText = text;
+          textsize = (s > 0) ? s : 1;
+		
+          fillRoundRect(40,10,245,80,4,BLUE);
+          drawRoundRect(40,10,245,80,4,WHITE);
+
+             if (x < 0) x = 0;
+	    else if (x >= _width) x = _width - 1;
+	    cursor_x = x;
+	         if (y < 0) y = 0;
+	    else if (y >= _height) y = _height - 1;
+	    cursor_y = y;
+		print(popupText);
+		
+	
+}
+
+void Grafx_esp::Popup3(const __FlashStringHelper* text, uint8_t s, int16_t x, int16_t y){
+        popupText = text;
+          textsize = (s > 0) ? s : 1;
+       if (x < 0) x = 0;
+	    else if (x >= _width) x = _width - 1;
+	    cursor_x = x;
+	         if (y < 0) y = 0;
+	    else if (y >= _height) y = _height - 1;
+	    cursor_y = y;
+		print(popupText);
+}
+
+/*void GrafxT3::Popup(const __FlashStringHelper* text){
+	    popupText = text;
+        setTextSize(2);
+        fillRoundRect(0,0,320,60,4,BLUE);
+        drawRoundRect(0,0,320,60,4,WHITE);
+        setCursor(20,20);
+		print(popupText);
+		
+	
+}*/
+
+/*void GrafxT3::titleScreen(const __FlashStringHelper* name){
+	titleScreen(name, 0);
+}
+
+void GrafxT3::titleScreen(const uint8_t* logo){
+	titleScreen(F(""), logo);
+}
+
+void GrafxT3::titleScreen(){
+	titleScreen(F(""));
+}*/
+
+
+/*void GrafxT3::titleScreen(const __FlashStringHelper*  name, const uint8_t *logo){
+	if(startMenuTimer){
+		textsize = 1;
+		textWrap = false;
+		persistence = false;
+		fillScreen(BLACK);
+		while(1){
+			if(update()){
+				uint8_t logoOffset = pgm_read_byte(name)?textsize:0; //add an offset the logo when there is a name to display
+				//draw graphics
+				#if GrafxT3_TFTWIDTH;
+				drawBitmap1(0,0, gamebuinoLogo,84,10,BLACK);
+				if(logo){
+					drawBitmap1(0, 12+logoOffset, logo,84,10,GREEN);
+				}
+				cursor_x = 0;
+				cursor_y = 12; 
+				#else
+			    	drawBitmap(7,0, gamebuinoLogo,84,10,BLACK);
+			    	drawBitmap(-41,12,gamebuinoLogo,84,10,GREEN);
+				if(logo){
+			        drawBitmap(0, 24+logoOffset, logo,84,10,BLUE);
+				}
+				cursor_x = 0;
+				cursor_y = 24; 
+				#endif
+				print(name);
+				
+				//A button
+				cursor_x = Grafx_TFTWIDTH - display.fontWidth*3 -1;
+				cursor_y = GrafxT3_TFTHEIGHT - display.fontHeight*3 - 3;
+				if((frameCount/16)%2)
+				  println(F("\25 \20"));
+				else
+				  println(F("\25\20 "));
+				//B button
+				display.cursorX = LCDWIDTH - display.fontWidth*3 - 1;
+				display.cursorY++;
+				if(sound.globalVolume)
+					display.println(F("\26\23\24"));
+				else
+					display.println(F("\26\23x"));
+				//C button
+				display.cursorX = LCDWIDTH - display.fontWidth*3 - 1;
+				display.cursorY++;
+				display.println(F("\27SD"));
+				
+				//toggle volume when B is pressed
+				if(buttons.pressed(BTN_B)){
+					sound.setVolume(sound.globalVolume+1);
+					sound.playTick();
+				}
+				//leave the menu
+				if(buttons.pressed(BTN_A) || ((frameCount>=startMenuTimer)&&(startMenuTimer != 255))){
+					startMenuTimer = 255; //don't automatically skip the title screen next time it's displayed
+					sound.stopPattern(0);
+					sound.playOK();
+					break;
+				}
+				//flash the loader
+				if(buttons.pressed(BTN_C))
+					changeGame();
+			}
+		}
+		battery.show = true;
+	}
+}
+*/
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
 //////////////-----------------------Cursor------------------------------//////////////
@@ -1769,7 +1941,7 @@ void Grafx_esp::writeRect(int16_t x, int16_t y, int16_t w, int16_t h, const uint
 // writeRect8BPP - 	write 8 bit per pixel paletted bitmap
 //					bitmap data in array at pixels, one byte per pixel
 //					color palette data in array at palette
-void Grafx_esp::writeRect8BPP(int16_t x, int16_t y, int16_t w, int16_t h, const uint8_t *pixels, const uint16_t * palette)
+void Grafx_esp::writeRect8BPP(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t *pixels, const uint16_t * palette)
 {
 	//Serial.printf("\nWR8: %d %d %d %d %x\n", x, y, w, h, (uint32_t)pixels);
 	x += _originx;
@@ -1843,7 +2015,7 @@ void Grafx_esp::writeRect8BPP(int16_t x, int16_t y, int16_t w, int16_t h, const 
 //					bitmap data in array at pixels, 4 bits per pixel
 //					color palette data in array at palette
 //					width must be at least 2 pixels
-void Grafx_esp::writeRect4BPP(int16_t x, int16_t y, int16_t w, int16_t h, const uint8_t *pixels, const uint16_t * palette)
+void Grafx_esp::writeRect4BPP(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t *pixels, const uint16_t * palette)
 {
 	// Simply call through our helper
 	writeRectNBPP(x, y, w, h, 4, pixels, palette);
@@ -1852,7 +2024,7 @@ void Grafx_esp::writeRect4BPP(int16_t x, int16_t y, int16_t w, int16_t h, const 
 ///////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
-void Grafx_esp::writeRect4BPPtm(int16_t x, int16_t y, int16_t w, int16_t h, const uint8_t *pixels, uint16_t dx, uint16_t dy, uint16_t dw, uint16_t dh, const uint16_t * palette )
+void Grafx_esp::writeRect4BPPtm(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t *pixels, uint16_t dx, uint16_t dy, uint16_t dw, uint16_t dh, const uint16_t * palette )
 {
 	dw += dx;
 	dh += dy;{
@@ -1871,7 +2043,7 @@ void Grafx_esp::writeRect4BPPtm(int16_t x, int16_t y, int16_t w, int16_t h, cons
 //					bitmap data in array at pixels, 4 bits per pixel
 //					color palette data in array at palette
 //					width must be at least 4 pixels
-void Grafx_esp::writeRect2BPP(int16_t x, int16_t y, int16_t w, int16_t h, const uint8_t *pixels, const uint16_t * palette)
+void Grafx_esp::writeRect2BPP(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t *pixels, const uint16_t * palette)
 {
 	// Simply call through our helper
 	writeRectNBPP(x, y, w, h, 2, pixels, palette);
@@ -1883,7 +2055,7 @@ void Grafx_esp::writeRect2BPP(int16_t x, int16_t y, int16_t w, int16_t h, const 
 //					bitmap data in array at pixels, 4 bits per pixel
 //					color palette data in array at palette
 //					width must be at least 8 pixels
-void Grafx_esp::writeRect1BPP(int16_t x, int16_t y, int16_t w, int16_t h, const uint8_t *pixels, const uint16_t * palette)
+void Grafx_esp::writeRect1BPP(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t *pixels, const uint16_t * palette)
 {
 	// Simply call through our helper
 	writeRectNBPP(x, y, w, h, 1, pixels, palette);
@@ -1896,7 +2068,7 @@ void Grafx_esp::writeRect1BPP(int16_t x, int16_t y, int16_t w, int16_t h, const 
 //					bitmap data in array at pixels
 //  Currently writeRect1BPP, writeRect2BPP, writeRect4BPP use this to do all of the work. 
 void Grafx_esp::writeRectNBPP(int16_t x, int16_t y, int16_t w, int16_t h, uint8_t bits_per_pixel,
-	const uint8_t *pixels, const uint16_t * palette)
+	const uint16_t *pixels, const uint16_t * palette)
 {
 	//Serial.printf("\nWR8: %d %d %d %d %x\n", x, y, w, h, (uint32_t)pixels);
 	x += _originx;
@@ -1939,7 +2111,7 @@ void Grafx_esp::writeRectNBPP(int16_t x, int16_t y, int16_t w, int16_t h, uint8_
 		w = _displayclipx2 - x;
 	}
 
-	const uint8_t * pixels_row_start = pixels;  // remember our starting position offset into row
+	const uint16_t * pixels_row_start = pixels;  // remember our starting position offset into row
 
 #ifdef ENABLE_Grafx_FRAMEBUFFER
 	if (_use_fbtft) {
